@@ -1,40 +1,57 @@
-# melbourne-property-rf-analysis
-End-to-end regression analysis of the Melbourne housing market using Scikit-Learn. Features iterative optimization from Linear Regression to Random Forest ($R^2$ = 0.676).
-# Melbourne Housing Market: End-to-End Price Regression
+# 📈 Melbourne Housing Price Prediction: Engineering Pipeline Evolution
 
-Comprehensive analysis of the Melbourne (Australia) housing market and development of predictive machine learning models to estimate property values based on their physical and geographical characteristics.
+Comprehensive analysis of the Melbourne (Australia) housing market and development of predictive machine learning pipelines to estimate property values. 
 
-## 📌 Project Overview
-The goal of this project is to investigate the core factors driving real estate pricing in Melbourne, perform deep exploratory data analysis (EDA), handle domain-specific missing values, and build a robust machine learning pipeline for price prediction.
+This project addresses a classic **regression** task featuring distinct spatial dependencies and high-density missing data. Its core value lies in demonstrating the **evolution of an engineer's mindset** — shifting from a naive pipeline with data leakages to a robust, production-ready framework.
 
-This project addresses a classic **regression** task featuring distinct spatial (geographical) dependencies and high-density missing data.
+---
 
-## 🛠 Technical Stack
-* **Language:** Python
-* **Data Analysis & Preprocessing:** Pandas, NumPy
-* **Data Visualization:** Matplotlib, Seaborn
-* **Machine Learning:** Scikit-learn (LinearRegression, RandomForestRegressor, StandardScaler)
+## 🚀 Key Results & Experiment Log
 
-## 🧮 Feature Engineering & Data Cleansing
-* **Distance Hyperbola:** EDA revealed a non-linear (hyperbolic) relationship between property price and distance to the city center. An `Inverse_Distance = 1 / (Distance + 0.1)` feature was engineered, significantly improving linear model performance.
-* **Group-Based Imputation:** Missing values in `BuildingArea` and `Landsize` were imputed using a granular approach — extracting the median values grouped by specific `Suburb`, property `Type`, and number of `Rooms` via the `.transform('median')` method, rather than using a global dataset average.
-* **Anomaly Filtering:** Integrated strict outlier removal constraints for building sizes (dropping records where `BuildingArea` < 10 or > 600 sq.m.) to eliminate data noise before training.
+The project was developed in two distinct phases. The metrics below highlight how fixing structural issues and upgrading algorithms dramatically slashed the Mean Absolute Error (MAE) and boosted the $R^2$ score.
 
-## 📈 Model Performance Evolution (Iterative Approach)
+### Phase 2: Production-Ready Pipeline (Latest Version)
+*Clean data splitting, proper cross-validation, target log-transformation, and advanced algorithms.*
 
-The feature architecture was developed iteratively, leading to a consistent improvement in model performance metrics (evaluated using Mean Absolute Error — MAE, and Coefficient of Determination — $R^2$):
+| Model / Algorithm | MAE (AU$) | $R^2$ Score | Key Note |
+| :--- | :---: | :---: | :--- |
+| **Linear Regression (Ridge)** | 231,653.37 | 0.6800 | L2 regularization prevents overfitting on spatial flags |
+| **Random Forest Regressor** | 170,765.46 | 0.7900 | Massive upgrade due to log-transformed target variable |
+| **LightGBM Regressor (Final)** | **163,934.27** | **0.8200** | Top performance via native handling of high-cardinality suburbs |
 
-| Iteration | Experiment Description | MAE (AU$) | $R^2$ |
-| :--- | :--- | :--- | :--- |
-| **Baseline** | Linear Regression on raw features (`Rooms`, `Distance`, `BuildingArea`) | 331,236 | 0.434 |
-| **Feature Eng.** | Linear Regression + `Inverse_Distance` + One-Hot Encoding for property `Type` | 318,274 | 0.460 |
-| **Algorithm Shift** | Transitioned to ensemble methods. Random Forest on the same feature set | 249,702 | 0.586 |
-| **Spatial Context** | Random Forest + added geographical regions (`Regionname` via One-Hot Encoding) | 211,064 | **0.676** |
-| **Optimization** | Random Forest + Dropped redundant low-importance features (`EV`, `NV`, `WV`, `SEM`) based on `.feature_importances_` | **211,363** | **0.676** |
+### Phase 1: Legacy Pipeline (Archived Draft)
+*Initial experiments featuring architectural flaws (data leakage during imputation) and un-transformed targets.*
 
-**Key Takeaway:** Incorporating spatial context (`Regionname`) dropped the model's average error by nearly **38,000 AU$**. Subsequent feature selection based on importance metrics successfully simplified the model (removing 4 columns) with zero degradation in predictive power.
+| Model / Experiment | MAE (AU$) | $R^2$ Score | Experiment Takeaway |
+| :--- | :---: | :---: | :--- |
+| Baseline (Linear Regression) | 331,236.55 | 0.4342 | Naive model on raw numeric features |
+| Linear Regression + Scaling + OHE | 318,274.77 | 0.4605 | Added `Inverse_Distance` and property type |
+| Random Forest (Basic) | 249,702.25 | 0.5862 | Transitioned to tree-based ensembles |
+| Random Forest + Spatial Context | 211,064.78 | 0.6758 | Added `Regionname` (dropped error by 38k AU$) |
+| Random Forest + Feature Selection | 211,363.64 | 0.6758 | Dropped 4 low-importance columns with zero quality degradation |
 
-## 🚀 How to Run
-1. Clone the repository.
-2. Open the notebook in your Anaconda / Jupyter Notebook environment.
-3. Check the execution of the final `predict_house_price` function designed for standalone, real-time value estimation.
+---
+
+## 🔄 Post-Code-Review Refactoring & Leakage Fix
+
+The transition from Phase 1 to Phase 2 involved a deep architectural overhaul based on rigorous validation principles:
+
+1. **Data Leakage Elimination:** In the legacy version, missing value imputations (group medians) were calculated across the entire dataset before splitting. In the production version, preprocessing parameters are strictly learned from the training folds and then mapped to validation/test folds, preventing information from bleeding backward.
+2. **Target Log-Transformation:** Real estate prices are heavily right-skewed. Applying `np.log1p` to the target variable allowed models (especially Ridge and LightGBM) to learn exponentially better, avoiding massive errors on luxury properties.
+3. **Model Simplification:** Proved that dropping redundant low-importance features based on `.feature_importances_` optimizes memory and speed without hurting accuracy.
+
+---
+
+## 🛠️ Feature Engineering Highlights
+
+* **Distance Hyperbola:** EDA revealed a non-linear relationship between price and distance to the city center. An `Inverse_Distance = 1 / (Distance + 0.1)` feature was engineered to linearize this decay.
+* **Premium Comfort Index:** Created a composite asset scale feature (`Total_Amenities = Rooms + Bathroom + Car`) to capture the overall capacity of the property.
+* **Market Seasonality:** Extracted temporal trends (`Year` and `Month`) to account for cyclical real estate market demand.
+
+## 📁 Repository Structure
+* `Melbourne_housing_FULL.csv` — Raw dataset.
+* `melbourne_final.ipynb` — Production notebook featuring clean validation, Ridge, RF, and LightGBM models.
+* `melbourne-houses-rf-analysis.ipynb` — Initial project draft preserved to showcase pipeline optimization history.
+
+## 🛠️ Technical Stack
+`Python`, `Pandas`, `NumPy`, `LightGBM`, `Scikit-learn` (Ridge, RandomForestRegressor, StandardScaler), `Matplotlib`, `Seaborn`.
