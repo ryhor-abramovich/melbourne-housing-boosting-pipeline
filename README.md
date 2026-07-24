@@ -50,8 +50,8 @@ The transition from Phase 1 to Phase 2 involved a deep architectural overhaul ba
 
 ## 📁 Repository Structure
 * `Melbourne_housing_FULL.csv` — Raw dataset.
-* `melbourne_final.ipynb` — Production notebook featuring clean validation, Ridge, RF, and LightGBM models.
-* `melbourne-houses-rf-analysis.ipynb` — Initial project draft preserved to showcase pipeline optimization history.
+* `melbourne_ml_pipeline.ipynb` — Production notebook featuring clean validation, Ridge, RF, and LightGBM models.
+* `legacy_v1_notebook.ipynb` — Initial project draft preserved to showcase pipeline optimization history.
 
 ## 🛠️ Technical Stack
 `Python`, `Pandas`, `NumPy`, `LightGBM`, `Scikit-learn` (Ridge, RandomForestRegressor, StandardScaler), `Matplotlib`, `Seaborn`.
