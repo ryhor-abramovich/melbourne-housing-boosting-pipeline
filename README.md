@@ -1,57 +1,98 @@
-# 📈 Melbourne Housing Price Prediction: Engineering Pipeline Evolution
+# 🏠 Melbourne Housing Price Prediction: Engineering Pipeline
 
-Comprehensive analysis of the Melbourne (Australia) housing market and development of predictive machine learning pipelines to estimate property values. 
+A two-stage machine learning project for predicting Melbourne residential property prices.
 
-This project addresses a classic **regression** task featuring distinct spatial dependencies and high-density missing data. Its core value lies in demonstrating the **evolution of an engineer's mindset** — shifting from a naive pipeline with data leakages to a robust, production-ready framework.
-
----
-
-## 🚀 Key Results & Experiment Log
-
-The project was developed in two distinct phases. The metrics below highlight how fixing structural issues and upgrading algorithms dramatically slashed the Mean Absolute Error (MAE) and boosted the $R^2$ score.
-
-### Phase 2: Production-Ready Pipeline (Latest Version)
-*Clean data splitting, proper cross-validation, target log-transformation, and advanced algorithms.*
-
-| Model / Algorithm | MAE (AU$) | $R^2$ Score | Key Note |
-| :--- | :---: | :---: | :--- |
-| **Linear Regression (Ridge)** | 231,653.37 | 0.6800 | L2 regularization prevents overfitting on spatial flags |
-| **Random Forest Regressor** | 170,765.46 | 0.7900 | Massive upgrade due to log-transformed target variable |
-| **LightGBM Regressor (Final)** | **163,934.27** | **0.8200** | Top performance via native handling of high-cardinality suburbs |
-
-### Phase 1: Legacy Pipeline (Archived Draft)
-*Initial experiments featuring architectural flaws (data leakage during imputation) and un-transformed targets.*
-
-| Model / Experiment | MAE (AU$) | $R^2$ Score | Experiment Takeaway |
-| :--- | :---: | :---: | :--- |
-| Baseline (Linear Regression) | 331,236.55 | 0.4342 | Naive model on raw numeric features |
-| Linear Regression + Scaling + OHE | 318,274.77 | 0.4605 | Added `Inverse_Distance` and property type |
-| Random Forest (Basic) | 249,702.25 | 0.5862 | Transitioned to tree-based ensembles |
-| Random Forest + Spatial Context | 211,064.78 | 0.6758 | Added `Regionname` (dropped error by 38k AU$) |
-| Random Forest + Feature Selection | 211,363.64 | 0.6758 | Dropped 4 low-importance columns with zero quality degradation |
+The project focuses on data cleaning, feature engineering, handling missing values, categorical variables, and comparing several regression models.
 
 ---
 
-## 🔄 Post-Code-Review Refactoring & Leakage Fix
+## 📌 Project Overview
 
-The transition from Phase 1 to Phase 2 involved a deep architectural overhaul based on rigorous validation principles:
+This project uses the Melbourne housing dataset containing **34,857 records and 21 columns**.
 
-1. **Data Leakage Elimination:** In the legacy version, missing value imputations (group medians) were calculated across the entire dataset before splitting. In the production version, preprocessing parameters are strictly learned from the training folds and then mapped to validation/test folds, preventing information from bleeding backward.
-2. **Target Log-Transformation:** Real estate prices are heavily right-skewed. Applying `np.log1p` to the target variable allowed models (especially Ridge and LightGBM) to learn exponentially better, avoiding massive errors on luxury properties.
-3. **Model Simplification:** Proved that dropping redundant low-importance features based on `.feature_importances_` optimizes memory and speed without hurting accuracy.
+The work was developed in two stages:
+
+1. **Exploratory / baseline stage** — initial analysis, feature engineering, and experiments with different regression approaches.
+2. **Refined modeling stage** — stricter preprocessing, explicit train/test separation, leakage-safe imputation, and comparative evaluation of Ridge Regression, Random Forest, and LightGBM.
+
+The target variable is **`Price`**.
 
 ---
 
-## 🛠️ Feature Engineering Highlights
+## 🔍 Stage 1 — Initial Modeling
 
-* **Distance Hyperbola:** EDA revealed a non-linear relationship between price and distance to the city center. An `Inverse_Distance = 1 / (Distance + 0.1)` feature was engineered to linearize this decay.
-* **Premium Comfort Index:** Created a composite asset scale feature (`Total_Amenities = Rooms + Bathroom + Car`) to capture the overall capacity of the property.
-* **Market Seasonality:** Extracted temporal trends (`Year` and `Month`) to account for cyclical real estate market demand.
+The first stage was used to explore the dataset and establish baseline performance.
 
-## 📁 Repository Structure
-* `Melbourne_housing_FULL.csv` — Raw dataset.
-* `melbourne_ml_pipeline.ipynb` — Production notebook featuring clean validation, Ridge, RF, and LightGBM models.
-* `legacy_v1_notebook.ipynb` — Initial project draft preserved to showcase pipeline optimization history.
+The experiments included:
 
-## 🛠️ Technical Stack
-`Python`, `Pandas`, `NumPy`, `LightGBM`, `Scikit-learn` (Ridge, RandomForestRegressor, StandardScaler), `Matplotlib`, `Seaborn`.
+- Linear Regression
+- Random Forest
+- feature scaling
+- categorical encoding
+- feature engineering
+- different combinations of predictors
+
+The initial experiments showed that tree-based models substantially outperformed the linear baseline.
+
+This stage was useful for identifying promising preprocessing and modeling directions before building the more structured final pipeline.
+
+---
+
+## 🧹 Stage 2 — Data Cleaning & Preprocessing
+
+The second stage introduced a more disciplined preprocessing workflow.
+
+### Dataset
+
+The original dataset contains:
+
+- **34,857 rows**
+- **21 columns**
+- numerical and categorical features
+- substantial missing data in several variables
+
+After removing rows with missing target values and filtering explicit physical/data errors, the dataset contained:
+
+- **27,111 records**
+
+The data was then split into:
+
+- **21,688 training records**
+- **5,423 test records**
+
+The split was performed before model-specific preprocessing to avoid data leakage.
+
+---
+
+## 🚨 Anomaly Filtering
+
+The following rules were applied before the train/test split:
+
+| Feature | Filtering rule |
+|---|---|
+| `Price` | Rows with missing target values removed |
+| `Landsize` | Values above 5,000 filtered; missing values preserved |
+| `BuildingArea` | Values above 600 filtered; missing values preserved |
+| `YearBuilt` | Values outside 1800–2026 filtered; missing values preserved |
+
+The goal was not to remove statistically unusual houses simply because they were unusual, but to eliminate values that were considered implausible or indicative of data errors.
+
+---
+
+## 🛠️ Feature Engineering
+
+### Date features
+
+The original `Date` column was converted to datetime and decomposed into:
+
+- `SaleYear`
+- `SaleMonth`
+
+The original `Date` column was then removed.
+
+### Building age
+
+A derived feature was created:
+
+```text
+BuildingAge = SaleYear - YearBuilt
